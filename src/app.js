@@ -2,16 +2,53 @@ const express = require('express');
 const connectDB = require('./config/database');
 const app = express();
 const User = require('./models/user');
+const { validateSingUpData } = require('./utils/validator');
+const bcrypt = require('bcrypt');
+
 app.use(express.json())
 
 app.post('/singup', async (req, res) => {
 
-    const user = new User(req.body);
+
     try {
+        //validate user data
+        validateSingUpData(req.body);
+        const { firstName, lastName, password, email, userProfile, about, skills, gender } = req.body
+
+        //encrypt password
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        const user = new User({
+            firstName,
+            lastName,
+            email,
+            password: passwordHash,
+        });
         await user.save();
         res.status(201).send("user added successfuly");
     } catch (error) {
         res.status(401).send(`failed to add user ${error.message}`)
+    }
+})
+
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email: email });
+
+        if (!user) {
+            throw new Error("Invalid credentials"); 
+        }
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        console.log(password, isPasswordMatch)
+        if (isPasswordMatch) {
+            res.send("login successfuly")
+        } else {
+            throw new Error("Invalid credential")
+        }
+
+    } catch (err) {
+        res.status(404).send(`Error ${err.message}`)
     }
 })
 
@@ -39,37 +76,37 @@ app.get("/feed", async (req, res) => {
 })
 
 // update the user by id
-app.patch('/user/:userId', async(req, res) =>{
+app.patch('/user/:userId', async (req, res) => {
     const userId = req.params.userId;
     const data = req.body;
-    try{
-      const ALLOW_UPDATE = ["photo", "about", "gender", "userProfile"];
-      const isUpdateAllow = Object.keys(data).every((kl) => ALLOW_UPDATE.includes(kl));
-      if(!isUpdateAllow){
-       throw new Error("update are not allow")
-      }
-      if(data.skills?.length > 10){
-        throw new Error("skill will not more then 10")
-      }
-      const userUpdate = await User.findByIdAndUpdate({_id: userId}, data, {
-        runValidators: true
-      });
-      console.log(userUpdate);
-      res.send("user update successfuly");
-    }catch(err){
-      res.status(404).send(`something went wrong ${err.message}`);
-    }  
+    try {
+        const ALLOW_UPDATE = ["photo", "about", "gender", "userProfile"];
+        const isUpdateAllow = Object.keys(data).every((kl) => ALLOW_UPDATE.includes(kl));
+        if (!isUpdateAllow) {
+            throw new Error("update are not allow")
+        }
+        if (data.skills?.length > 10) {
+            throw new Error("skill will not more then 10")
+        }
+        const userUpdate = await User.findByIdAndUpdate({ _id: userId }, data, {
+            runValidators: true
+        });
+        console.log(userUpdate);
+        res.send("user update successfuly");
+    } catch (err) {
+        res.status(404).send(`something went wrong ${err.message}`);
+    }
 })
 
 // delete the user by id
-app.delete('/user', async(req, res) =>{
+app.delete('/user', async (req, res) => {
     const userId = req.body.userId;
-    try{
-      await User.findByIdAndDelete(userId);
-      res.send("user delete successfuly");
-    }catch(err){
-      res.status(404).send("something went wrop");
-    }  
+    try {
+        await User.findByIdAndDelete(userId);
+        res.send("user delete successfuly");
+    } catch (err) {
+        res.status(404).send("something went wrop");
+    }
 })
 
 connectDB().then(() => {
