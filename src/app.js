@@ -38,6 +38,30 @@ app.get("/feed", async (req, res) => {
     }
 })
 
+// update the user by id
+app.patch('/user', async(req, res) =>{
+    const userId = req.body.userId;
+    const data = req.body;
+    try{
+      const userUpdate = await User.findByIdAndUpdate({_id: userId}, data);
+      console.log(userUpdate);
+      res.send("user update successfuly");
+    }catch(err){
+      res.status(404).send("something went wrop");
+    }  
+})
+
+// delete the user by id
+app.delete('/user', async(req, res) =>{
+    const userId = req.body.userId;
+    try{
+      await User.findByIdAndDelete(userId);
+      res.send("user delete successfuly");
+    }catch(err){
+      res.status(404).send("something went wrop");
+    }  
+})
+
 connectDB().then(() => {
     console.log("DB connected Sucessfully");
     app.listen(3000, () => {
