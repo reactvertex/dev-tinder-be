@@ -11,7 +11,7 @@ app.post('/singup', async (req, res) => {
         await user.save();
         res.status(201).send("user added successfuly");
     } catch (error) {
-        res.send(401).send("failed to add user")
+        res.status(401).send(`failed to add user ${error.message}`)
     }
 })
 
@@ -43,7 +43,9 @@ app.patch('/user', async(req, res) =>{
     const userId = req.body.userId;
     const data = req.body;
     try{
-      const userUpdate = await User.findByIdAndUpdate({_id: userId}, data);
+      const userUpdate = await User.findByIdAndUpdate({_id: userId}, data, {
+        runValidators: true
+      });
       console.log(userUpdate);
       res.send("user update successfuly");
     }catch(err){
