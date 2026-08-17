@@ -39,17 +39,25 @@ app.get("/feed", async (req, res) => {
 })
 
 // update the user by id
-app.patch('/user', async(req, res) =>{
-    const userId = req.body.userId;
+app.patch('/user/:userId', async(req, res) =>{
+    const userId = req.params.userId;
     const data = req.body;
     try{
+      const ALLOW_UPDATE = ["photo", "about", "gender", "userProfile"];
+      const isUpdateAllow = Object.keys(data).every((kl) => ALLOW_UPDATE.includes(kl));
+      if(!isUpdateAllow){
+       throw new Error("update are not allow")
+      }
+      if(data.skills?.length > 10){
+        throw new Error("skill will not more then 10")
+      }
       const userUpdate = await User.findByIdAndUpdate({_id: userId}, data, {
         runValidators: true
       });
       console.log(userUpdate);
       res.send("user update successfuly");
     }catch(err){
-      res.status(404).send("something went wrop");
+      res.status(404).send(`something went wrong ${err.message}`);
     }  
 })
 
